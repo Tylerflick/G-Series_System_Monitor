@@ -82,7 +82,8 @@ namespace SystemMonitor
         {
             this.cpuLoad();
             this.memoryLoad();
-            //this.pingLoad();
+            this.cpuTemp();
+            //this.Downspeed();
         }
 
         /// <summary>
@@ -156,7 +157,7 @@ namespace SystemMonitor
             }
         }
 
-        private void pingLoad()
+        private void downSpeed()
         {
             try
             {
@@ -167,6 +168,24 @@ namespace SystemMonitor
             catch (ManagementException e)
             {
                 Console.Write("An error occurred while pinging: " + e.Message);
+            }
+        }
+
+        private void cpuTemp()
+        {
+            try
+            {
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher(@"root\WMI", "SELECT * FROM MSAcpi_ThermalZoneTemperature");
+                foreach (ManagementObject queryObj in searcher.Get())
+                {
+
+                    Double temp = Convert.ToDouble(queryObj["CurrentTemperature"].ToString());
+                    Console.WriteLine(temp = (temp - 2732) / 10.0); //Convert Celcius
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
 
