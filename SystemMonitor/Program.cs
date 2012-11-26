@@ -40,7 +40,7 @@ namespace SystemMonitor
 
             ////Subscribe(btnhd);
             ////Release graphics resources
-            //view.emptyGraphics();
+            view.emptyGraphics();
         }
 
 

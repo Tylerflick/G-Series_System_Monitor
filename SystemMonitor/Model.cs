@@ -12,22 +12,58 @@ namespace SystemMonitor
 {
     class Model
     {
+        //Queues are used instead of Lists as the data structure denotes intent of use
+        //These queues hold the most current values of their respective system data
         private Queue<int> cpuLoadQ = new Queue<int>();
+        private Queue<int> cpuTempQ = new Queue<int>();
         private Queue<int> memoryLoadQ = new Queue<int>();
         private Queue<int> pingQ = new Queue<int>();
-        private ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_Processor");
+        private Queue<int> cpuSpeedQ = new Queue<int>();
+        //These integers hold the current values of their respective system data
+        //If the data in the queues wasn't manipulated for the graph, the first data member could be used instead
+        private int currentLoad = 0;
+        private int currentTemp = 0;
+        private int currentMem = 0;
+        private int currentPing = 0;
+        private int currentSpeed = 0;
         private Ping ping = new Ping();
         //Define the size of the graph
-        int xmax = 160;
-        int ymax = 31;
-        int xmin = 10;
-        int i = 0;
-        int qDepth;
-        Point[] points;
-        int[] intPoints;
+        private int xmax = 160;
+        private int ymax = 31;
+        private int xmin = 10;
+        private int i = 0;
+        private int qDepth;
+        private Point[] points;
+        private int[] intPoints;
 
 
-        public Point[] cpuGraph
+        public void queueData(Object o)
+        {
+            this.cpuLoad();
+            this.memoryLoad();
+            this.cpuTemp();
+            this.diskSpeed();
+            //this.cpuSpeed();
+            //this.Downspeed();
+        }
+
+        public int Xmax
+        {
+            get
+            {
+                return xmax;
+            }
+        }
+
+        public int Ymax
+        {
+            get
+            {
+                return ymax;
+            }
+        }
+
+        public Point[] cpuLoadGraph
         {
             get
             {
@@ -41,6 +77,13 @@ namespace SystemMonitor
                 return createGraph(memoryLoadQ);
             }
         }
+        public Point[] tempGraph
+        {
+            get
+            {
+                return createGraph(cpuTempQ);
+            }
+        }
         public Point[] netGraph
         {
             get
@@ -48,13 +91,29 @@ namespace SystemMonitor
                 return createGraph(pingQ);
             }
         }
-        public Point[] diskGraph
+
+        public int currentMetric(int type)
         {
-            get
+            switch (type)
             {
-                return createGraph(cpuLoadQ);
+                case 1:
+                    return currentLoad;
+                    break;
+                case 2:
+                    return currentMem;
+                    break;
+                case 3:
+                    return currentPing;
+                    break;
+                case 4:
+                    return currentTemp;
+                    break;
+                default:
+                    return currentLoad;
+                    break;
             }
         }
+
 
         private Point[] createGraph(Queue<int> data)
         {
@@ -68,6 +127,7 @@ namespace SystemMonitor
             i = 0;
             while (i < qDepth)
             {
+                //Points original values are divided by 3.3 to fit on a graph that is roughly 30 pixels in height
                 points[i] = new Point(xmax - (i + xmin), Convert.ToInt32(ymax - intPoints[i] / 3.3));
                 i++;
 
@@ -78,13 +138,6 @@ namespace SystemMonitor
         }
 
 
-        public void queueData(Object o)
-        {
-            this.cpuLoad();
-            this.memoryLoad();
-            this.cpuTemp();
-            //this.Downspeed();
-        }
 
         /// <summary>
         /// Fetches the current load of a cpu core
@@ -103,12 +156,15 @@ namespace SystemMonitor
         {
             try
             {
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_Processor");
                 foreach (ManagementObject queryObj in searcher.Get())
                 {
-                    cpuLoadQ.Enqueue(Convert.ToInt32(queryObj["LoadPercentage"]));
+                    currentLoad = (Convert.ToInt32(queryObj["LoadPercentage"]));
+                    cpuLoadQ.Enqueue(currentLoad);
                 }
                 if (cpuLoadQ.Count > 133) cpuLoadQ.Dequeue();
-                //Console.WriteLine(cpuLoadQ.Count);
+                searcher.Dispose();
+
             }
             catch (ManagementException e)
             {
@@ -128,6 +184,7 @@ namespace SystemMonitor
                         return Convert.ToInt32(queryObj["TotalVisibleMemorySize"]);
                         
                     }
+                    searcher.Dispose();
                 }
                 catch (ManagementException e)
                 {
@@ -145,11 +202,12 @@ namespace SystemMonitor
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_OperatingSystem");
                 foreach (ManagementObject queryObj in searcher.Get())
                 {
-                    memoryLoadQ.Enqueue(Convert.ToInt32(((double)(MemoryTotal - Convert.ToInt32(queryObj["FreePhysicalMemory"])) / MemoryTotal) * 100));
-                    if (this.memoryLoadQ.Count > 133) this.memoryLoadQ.Dequeue();
-                    //Console.WriteLine(this.memoryLoadQ.Count);
-                   
+                    
+                    currentMem = Convert.ToInt32(((double)(MemoryTotal - Convert.ToInt32(queryObj["FreePhysicalMemory"])) / MemoryTotal) * 100);
+                    memoryLoadQ.Enqueue(currentMem);
                 }
+                if (this.memoryLoadQ.Count > 133) this.memoryLoadQ.Dequeue();
+                searcher.Dispose();
             }
             catch (ManagementException e)
             {
@@ -179,15 +237,70 @@ namespace SystemMonitor
                 foreach (ManagementObject queryObj in searcher.Get())
                 {
 
-                    Double temp = Convert.ToDouble(queryObj["CurrentTemperature"].ToString());
-                    Console.WriteLine(temp = (temp - 2732) / 10.0); //Convert Celcius
+                        Double t = Convert.ToDouble(queryObj["CurrentTemperature"].ToString());
+                    currentTemp += Convert.ToInt32(((t - 2732) / 10.0)); //Convert to Celcius
                 }
+                //Calculate the average of the two temp probes
+                currentTemp /= 2;
+                cpuTempQ.Enqueue(currentTemp);
+                if (cpuTempQ.Count > 133) cpuTempQ.Dequeue();
+                searcher.Dispose();
             }
             catch(Exception e)
             {
-                Console.WriteLine(e);
+                throw e;
+            }
+        }
+
+        private void cpuSpeed()
+        {
+            try
+            {
+                ManagementObject searcher = new ManagementObject("Win32_Processor.DeviceID='CPU0'");
+                currentSpeed = Convert.ToInt32((searcher["CurrentClockSpeed"]));
+                cpuSpeedQ.Enqueue(currentSpeed);
+                Console.WriteLine("Speed MHZ:" + currentSpeed.ToString());
+                if (cpuSpeedQ.Count > 133) cpuSpeedQ.Dequeue();
+                searcher.Dispose();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        private void diskSpeed()
+        {
+            try
+            {
+                ManagementScope scope = new ManagementScope("\\\\.\\ROOT\\cimv2");
+
+                //create object query
+                ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_PerfFormattedData_PerfDisk_PhysicalDisk");
+
+                //create object searcher
+                ManagementObjectSearcher searcher =
+                                        new ManagementObjectSearcher(scope, query);
+
+                //get collection of WMI objects
+                ManagementObjectCollection queryCollection = searcher.Get();
+
+                //enumerate the collection.
+                int diskNum = 0;
+                foreach (ManagementObject m in queryCollection)
+                {
+                    // access properties of the WMI object
+                    if(diskNum == 1) Console.WriteLine("Name : {0} | DiskBytesPerSec : {1}", m["Name"], m["DiskBytesPerSec"]);
+                    diskNum++;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
 
     }
 }
+
+                
