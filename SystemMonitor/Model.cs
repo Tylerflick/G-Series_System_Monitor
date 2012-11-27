@@ -19,6 +19,7 @@ namespace SystemMonitor
         private Queue<int> memoryLoadQ = new Queue<int>();
         private Queue<int> pingQ = new Queue<int>();
         private Queue<int> cpuSpeedQ = new Queue<int>();
+        private Queue<int> diskAccessQ = new Queue<int>();
         //These integers hold the current values of their respective system data
         //If the data in the queues wasn't manipulated for the graph, the first data member could be used instead
         private int currentLoad = 0;
@@ -26,6 +27,7 @@ namespace SystemMonitor
         private int currentMem = 0;
         private int currentPing = 0;
         private int currentSpeed = 0;
+        private int currentDisk = 0;
         private Ping ping = new Ping();
         //Define the size of the graph
         private int xmax = 160;
@@ -84,11 +86,11 @@ namespace SystemMonitor
                 return createGraph(cpuTempQ);
             }
         }
-        public Point[] netGraph
+        public Point[] diskGraph
         {
             get
             {
-                return createGraph(pingQ);
+                return createGraph(diskAccessQ);
             }
         }
 
@@ -103,7 +105,7 @@ namespace SystemMonitor
                     return currentMem;
                     break;
                 case 3:
-                    return currentPing;
+                    return currentDisk;
                     break;
                 case 4:
                     return currentTemp;
@@ -137,21 +139,6 @@ namespace SystemMonitor
 
         }
 
-
-
-        /// <summary>
-        /// Fetches the current load of a cpu core
-        /// </summary>
-        /// <param name="coreNum">Integer returned from returnNumCores</param>
-        /// <returns>String in the form of a percentage of core load</returns>
-        /// <example>
-        /// CPUMonitor mon = new CPUMonitor();
-        /// foreach(var i in mon.returnNumCores())
-        /// {
-        ///     Console.Log("Core number "+i+" load: "+coreLoad(i));
-        /// }
-        /// </example>
-        /// 
         private void cpuLoad()
         {
             try
@@ -273,26 +260,18 @@ namespace SystemMonitor
         {
             try
             {
-                ManagementScope scope = new ManagementScope("\\\\.\\ROOT\\cimv2");
-
-                //create object query
-                ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_PerfFormattedData_PerfDisk_PhysicalDisk");
-
-                //create object searcher
-                ManagementObjectSearcher searcher =
-                                        new ManagementObjectSearcher(scope, query);
-
-                //get collection of WMI objects
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("\\\\.\\ROOT\\cimv2", "SELECT * FROM Win32_PerfFormattedData_PerfDisk_PhysicalDisk");
                 ManagementObjectCollection queryCollection = searcher.Get();
-
-                //enumerate the collection.
                 int diskNum = 0;
-                foreach (ManagementObject m in queryCollection)
+                foreach (ManagementObject queryObj in queryCollection)
                 {
                     // access properties of the WMI object
-                    if(diskNum == 1) Console.WriteLine("Name : {0} | DiskBytesPerSec : {1}", m["Name"], m["DiskBytesPerSec"]);
+                    if (diskNum == 1) currentDisk = Convert.ToInt32(queryObj["DiskBytesPerSec"]);
                     diskNum++;
+                    if(diskNum > 1) break;
                 }
+                diskAccessQ.Enqueue(currentDisk);
+                if (diskAccessQ.Count > 133) diskAccessQ.Dequeue();
             }
             catch (Exception e)
             {

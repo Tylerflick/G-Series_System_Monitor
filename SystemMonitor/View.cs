@@ -71,7 +71,7 @@ namespace SystemMonitor
                     points = data.memoryGraph;
                     break;
                 case 3:
-                    points = data.netGraph;
+                    points = data.diskGraph;
                     break;
                 case 4:
                     points = data.tempGraph;
@@ -115,35 +115,35 @@ namespace SystemMonitor
                     gfx.FillRectangle(lcdBrush, 6, 33, 22, 10);
                     gfx.DrawString("CPU", lcdFont, activeBrush, 5, 31);
                     gfx.DrawString("Mem", lcdFont, lcdBrush, 42, 31);
-                    gfx.DrawString("Net", lcdFont, lcdBrush, 90, 31);
+                    gfx.DrawString("Disk", lcdFont, lcdBrush, 90, 31);
                     gfx.DrawString("Temp", lcdFont, lcdBrush, 125, 31);
                     break;
                 case 2:
                     gfx.FillRectangle(lcdBrush, 43, 33, 29, 10);
                     gfx.DrawString("CPU", lcdFont, lcdBrush, 5, 31);
                     gfx.DrawString("Mem", lcdFont, activeBrush, 42, 31);
-                    gfx.DrawString("Net", lcdFont, lcdBrush, 90, 31);
+                    gfx.DrawString("Disk", lcdFont, lcdBrush, 90, 31);
                     gfx.DrawString("Temp", lcdFont, lcdBrush, 125, 31);
                     break;
                 case 3:
-                    gfx.FillRectangle(lcdBrush, 90, 33, 24, 10);
+                    gfx.FillRectangle(lcdBrush, 90, 33, 26, 10);
                     gfx.DrawString("CPU", lcdFont, lcdBrush, 5, 31);
                     gfx.DrawString("Mem", lcdFont, lcdBrush, 42, 31);
-                    gfx.DrawString("Net", lcdFont, activeBrush, 90, 31);
+                    gfx.DrawString("Disk", lcdFont, activeBrush, 90, 31);
                     gfx.DrawString("Temp", lcdFont, lcdBrush, 125, 31);
                     break;
                 case 4:
                     gfx.FillRectangle(lcdBrush, 125, 33, 33, 10);
                     gfx.DrawString("CPU", lcdFont, lcdBrush, 5, 31);
                     gfx.DrawString("Mem", lcdFont, lcdBrush, 42, 31);
-                    gfx.DrawString("Net", lcdFont, lcdBrush, 90, 31);
+                    gfx.DrawString("Disk", lcdFont, lcdBrush, 90, 31);
                     gfx.DrawString("Temp", lcdFont, activeBrush, 125, 31);
                     break;
                 default:
                     gfx.FillRectangle(lcdBrush, 6, 33, 22, 10);
                     gfx.DrawString("CPU", lcdFont, activeBrush, 5, 31);
                     gfx.DrawString("Mem", lcdFont, lcdBrush, 42, 31);
-                    gfx.DrawString("Net", lcdFont, lcdBrush, 90, 31);
+                    gfx.DrawString("Disk", lcdFont, lcdBrush, 90, 31);
                     gfx.DrawString("Temp", lcdFont, lcdBrush, 125, 31);
                     break;
             }
