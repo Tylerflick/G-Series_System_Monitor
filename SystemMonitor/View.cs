@@ -12,7 +12,7 @@ namespace SystemMonitor
     {
         Model data;
         private int device, type;
-        Point[] points;
+        private Point[] points;
         //Instantiate bitmap, graphics object, & various properties used for drawing on the canvas
         private Bitmap LCD = new Bitmap(160, 43);
         private Graphics gfx;
@@ -39,6 +39,7 @@ namespace SystemMonitor
             gfx = Graphics.FromImage(LCD);
         }
 
+		//Getter for peripheral assinged system index
         public int returnDeviceId
         {
             get
@@ -46,7 +47,9 @@ namespace SystemMonitor
                 return device;
             }
         }
-
+		
+		//Getter and setter for currently selected system monitor
+		//Ex: CPU usage, memory, disk access, etc
         public int Type
         {
             get
@@ -59,9 +62,11 @@ namespace SystemMonitor
                     type = value;
             }
         }
-
+		
+		//Main method to draw the graph on the LCD screen
         public void drawScreen()
         {
+			//Determin system metric
             switch (this.type)
             {
                 case 1:
@@ -95,9 +100,12 @@ namespace SystemMonitor
             //This is need becuase if the array of points only contains one point it will cause an error in the method
             if (points.Count() > 1)
             {
+				//Draw the graph
                 gfx.DrawLines(lcdPen, points);
+				//Draw the current value of the meter in the top right corner
                 drawCurrentMeter();
             }
+			//
             drawLabels();
 
             //Update the bitmap on the screen w/ new graphix
@@ -155,7 +163,6 @@ namespace SystemMonitor
             switch (this.type)
             {
                 case 1:
-
                     gfx.DrawString(data.currentMetric(1).ToString() + "%", lcdFontAlt, lcdBrush, 136, 0);
                     break;
                 case 2:
@@ -172,7 +179,8 @@ namespace SystemMonitor
                     break;
             }
         }
-
+		
+		//Release graphics resources
         public void emptyGraphics()
         {
             gfx.Dispose();
